@@ -2,14 +2,16 @@ basePath: /
 definitions:
   service.BatchCount:
     properties:
-      total_batches:
+      totalBatches:
         type: integer
     type: object
   service.DailySubmissions:
     properties:
       day:
         type: integer
-      submissions:
+      eligibleSubmissions:
+        type: integer
+      totalSubmissions:
         type: integer
     type: object
   service.DiscardedSubmissionDetails:
@@ -43,20 +45,20 @@ definitions:
     properties:
       day:
         type: integer
-      eligible_nodes_count:
+      eligibleNodesCount:
         type: integer
-      slot_ids:
+      slotIDs:
         items:
           type: string
         type: array
     type: object
   service.EligibleNodesRequest:
     properties:
-      data_market_address:
+      dataMarketAddress:
         type: string
-      epoch_id:
+      epochID:
         type: integer
-      past_days:
+      pastDays:
         type: integer
       token:
         type: string
@@ -65,39 +67,39 @@ definitions:
     properties:
       count:
         type: integer
-      slot_id:
+      slotID:
         type: integer
     type: object
   service.EligibleSubmissionCountsResponse:
     properties:
-      eligible_submission_counts:
+      eligibleSubmissionCounts:
         items:
           $ref: '#/definitions/service.EligibleSubmissionCounts'
         type: array
     type: object
   service.EpochDataMarketDayRequest:
     properties:
-      data_market_address:
+      dataMarketAddress:
         type: string
       day:
         type: integer
-      epoch_id:
+      epochID:
         type: integer
       token:
         type: string
     type: object
   service.EpochDataMarketRequest:
     properties:
-      data_market_address:
+      dataMarketAddress:
         type: string
-      epoch_id:
+      epochID:
         type: integer
       token:
         type: string
     type: object
   service.EpochSubmissionSummary:
     properties:
-      epoch_submission_count:
+      epochSubmissionCount:
         type: integer
       submissions:
         items:
@@ -167,42 +169,42 @@ definitions:
     properties:
       info:
         $ref: '#/definitions/service.InfoType-service_BatchCount'
-      request_id:
+      requestID:
         type: string
     type: object
   service.Response-service_DiscardedSubmissionsAPIResponse:
     properties:
       info:
         $ref: '#/definitions/service.InfoType-service_DiscardedSubmissionsAPIResponse'
-      request_id:
+      requestID:
         type: string
     type: object
   service.Response-service_EligibleSubmissionCountsResponse:
     properties:
       info:
         $ref: '#/definitions/service.InfoType-service_EligibleSubmissionCountsResponse'
-      request_id:
+      requestID:
         type: string
     type: object
   service.Response-service_EpochSubmissionSummary:
     properties:
       info:
         $ref: '#/definitions/service.InfoType-service_EpochSubmissionSummary'
-      request_id:
+      requestID:
         type: string
     type: object
   service.Response-service_ResponseArray-service_DailySubmissions:
     properties:
       info:
         $ref: '#/definitions/service.InfoType-service_ResponseArray-service_DailySubmissions'
-      request_id:
+      requestID:
         type: string
     type: object
   service.Response-service_ResponseArray-service_EligibleNodes:
     properties:
       info:
         $ref: '#/definitions/service.InfoType-service_ResponseArray-service_EligibleNodes'
-      request_id:
+      requestID:
         type: string
     type: object
   service.SnapshotSubmissionSwagger:
@@ -216,23 +218,23 @@ definitions:
     type: object
   service.SubmissionDetails:
     properties:
-      submission_data:
+      submissionData:
         $ref: '#/definitions/service.SnapshotSubmissionSwagger'
-      submission_id:
+      submissionID:
         type: string
     type: object
   service.SubmissionsRequest:
     properties:
-      data_market_address:
+      dataMarketAddress:
         type: string
-      past_days:
+      pastDays:
         type: integer
-      slot_id:
+      slotID:
         type: integer
       token:
         type: string
     type: object
-host: localhost:8080
+host: devnet-sequencer-collector.aws2.powerloom.io
 info:
   contact:
     email: support@example.com
@@ -372,38 +374,6 @@ paths:
       summary: Get the submission counts of all eligible slotIDs
       tags:
       - Eligible Submission Count
-  /eligibleSubmissions:
-    post:
-      consumes:
-      - application/json
-      description: Retrieves eligible submission counts for a specific data market
-        address across a specified number of past days
-      parameters:
-      - description: Submissions request payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/service.SubmissionsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/service.Response-service_ResponseArray-service_DailySubmissions'
-        "400":
-          description: 'Bad Request: Invalid input parameters (e.g., past days < 1,
-            invalid slotID or invalid data market address)'
-          schema:
-            type: string
-        "401":
-          description: 'Unauthorized: Incorrect token'
-          schema:
-            type: string
-      summary: Get eligible submissions
-      tags:
-      - Submissions
   /epochSubmissionDetails:
     post:
       consumes:
@@ -436,11 +406,11 @@ paths:
       summary: Get epoch submission details
       tags:
       - Submissions
-  /totalEligibleSubmissions:
+  /totalSubmissions:
     post:
       consumes:
       - application/json
-      description: Retrieves total eligible submission counts for a specific data
+      description: Retrieves eligible and total submission counts for a specific data
         market address across a specified number of past days
       parameters:
       - description: Submissions request payload
@@ -465,39 +435,9 @@ paths:
           description: 'Unauthorized: Incorrect token'
           schema:
             type: string
-      summary: Get total eligible submissions
+      summary: Get eligible and total submissions count
       tags:
       - Submissions
-  /totalSubmissions:
-    post:
-      consumes:
-      - application/json
-      description: Retrieves total submission counts for a specific data market address
-        across a specified number of past days
-      parameters:
-      - description: Submissions request payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/service.SubmissionsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/service.Response-service_ResponseArray-service_DailySubmissions'
-        "400":
-          description: 'Bad Request: Invalid input parameters (e.g., past days < 1,
-            invalid slotID or invalid data market address)'
-          schema:
-            type: string
-        "401":
-          description: 'Unauthorized: Incorrect token'
-          schema:
-            type: string
-      summary: Get total submissions
-      tags:
-      - Submissions
+schemes:
+- https
 swagger: "2.0"

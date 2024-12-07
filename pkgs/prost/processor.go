@@ -104,7 +104,10 @@ func ProcessEvents(block *types.Block) {
 				// Send updateRewards to relayer when current epoch is a multiple of epoch interval (config param)
 				if newEpochID.Int64()%config.SettingsObj.RewardsUpdateEpochInterval == 0 {
 					// Send periodic updateRewards to relayer throughtout the day
-					sendRewardUpdates(dataMarketAddress, newEpochID.String())
+					if err := sendRewardUpdates(dataMarketAddress, newEpochID.String()); err != nil {
+						log.Errorf("Failed to send reward updates for epoch %s within data market %s: %v", newEpochID.String(), dataMarketAddress, err)
+						continue
+					}
 				}
 
 				// Prepare the epoch marker details
@@ -319,8 +322,8 @@ func UpdateSlotSubmissionCount(ctx context.Context, epochID *big.Int, dataMarket
 		return err
 	}
 
-	// Send eligible nodes count and slotIDs only if the current epoch is a multiple of epoch interval (config param)
 	if epochID.Int64()%config.SettingsObj.RewardsUpdateEpochInterval == 0 {
+		// Send eligible nodes count to the relayer if the periodic eligible count alerts are set to true
 		if config.SettingsObj.PeriodicEligibleCountAlerts {
 			// Fetch the slotIDs whose eligible submissions are recorded for the current day
 			eligibleNodesByDayKeys := redis.EligibleNodesByDayKey(dataMarketAddress, currentDay.String())
@@ -334,6 +337,7 @@ func UpdateSlotSubmissionCount(ctx context.Context, epochID *big.Int, dataMarket
 			log.Info(alertMsg)
 		}
 
+		// Send the updateRewards request to the relayer, including the count of eligible nodes for the specified buffer days period
 		for day := 1; day <= int(math.Min(float64(config.SettingsObj.PastDaysBuffer), float64(currentDay.Int64()))); day++ {
 			// Calculate the day to check
 			dayToCheck := new(big.Int).Sub(currentDay, big.NewInt(int64(day)))
@@ -360,6 +364,15 @@ func UpdateSlotSubmissionCount(ctx context.Context, epochID *big.Int, dataMarket
 				// If count is non-zero, break the retry loop
 				if count != nil && count.Uint64() > 0 {
 					log.Infof("✅ Contract Query successful: Eligible node count for data market %s on day %s: %d", dataMarketAddress, dayToCheck.String(), count.Uint64())
+					break
+				}
+
+				// Calculate the difference between currentDay and dayToCheck
+				dayDifference := new(big.Int).Sub(currentDay, dayToCheck)
+
+				// Skip cached count and recalculation when the day has rolled over and epochID is within the buffer range
+				if dayDifference.Int64() == 1 && int(epochID.Int64())%epochsInADay <= BufferEpochs {
+					log.Infof("Skipping cached count and recalculation for data market %s on day %s due to epochID %s being in buffer range", dataMarketAddress, dayToCheck.String(), epochID.String())
 					break
 				}
 
@@ -533,7 +546,7 @@ func sendRewardUpdates(dataMarketAddress, epochID string) error {
 	submissionsList := make([]*big.Int, 0)
 
 	for slotID := int64(1); slotID <= NodeCount.Int64(); slotID++ {
-		// Get the eligible submission count in Redis
+		// Get the eligible submission count from Redis
 		key := redis.EligibleSlotSubmissionKey(dataMarketAddress, big.NewInt(slotID).String(), currentDay.String())
 		slotSubmissionCount, err := redis.Get(context.Background(), key)
 		if err != nil {
@@ -541,14 +554,18 @@ func sendRewardUpdates(dataMarketAddress, epochID string) error {
 			continue
 		}
 
-		submissionCountBigInt, ok := new(big.Int).SetString(slotSubmissionCount, 10)
-		if !ok {
-			log.Errorf("Failed to convert slot submission count %d to big.Int", slotID)
-			continue
-		}
+		// Check that submission count value is not empty
+		if slotSubmissionCount != "" {
+			submissionCountBigInt, ok := new(big.Int).SetString(slotSubmissionCount, 10)
+			if !ok {
+				log.Errorf("Failed to convert slot submission count %s to big.Int", slotSubmissionCount)
+				continue
+			}
 
-		slotIDs = append(slotIDs, big.NewInt(slotID))
-		submissionsList = append(submissionsList, submissionCountBigInt)
+			// Add the slotID and submission count to the respective arrays
+			slotIDs = append(slotIDs, big.NewInt(slotID))
+			submissionsList = append(submissionsList, submissionCountBigInt)
+		}
 	}
 
 	batchArrays(dataMarketAddress, currentDay.String(), slotIDs, submissionsList, 0)
