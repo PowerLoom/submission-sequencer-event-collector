@@ -234,7 +234,7 @@ definitions:
       token:
         type: string
     type: object
-host: devnet-sequencer-collector.aws2.powerloom.io
+host: '{{API_Host}}'
 info:
   contact:
     email: support@example.com

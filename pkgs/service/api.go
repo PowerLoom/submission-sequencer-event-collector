@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"submission-sequencer-collector/config"
 	"submission-sequencer-collector/pkgs/prost"
 	"submission-sequencer-collector/pkgs/redis"
@@ -36,7 +38,7 @@ import (
 // @contact.url http://www.yoursupport.com
 // @contact.email support@example.com
 
-// @host devnet-sequencer-collector.aws2.powerloom.io
+// @host {{API_Host}}
 // @schemes https
 // @BasePath /
 
@@ -826,7 +828,28 @@ func RequestMiddleware(next http.Handler) http.Handler {
 }
 
 func StartApiServer() {
+	// Get the API host from the environment variable
+	host := config.SettingsObj.APIHost
+
+	// Read the generated Swagger JSON file
+	swaggerFile, err := os.ReadFile("../pkgs/service/docs/swagger.json")
+	if err != nil {
+		log.Fatalf("Error reading swagger.json file: %v", err)
+	}
+
+	// Replace the placeholder {{API_HOST}} with the actual host value
+	swaggerData := string(swaggerFile)
+	swaggerData = replaceHost(swaggerData, host)
+
+	// Serve the modified Swagger UI
 	mux := http.NewServeMux()
+	mux.HandleFunc("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
+		// Serve the modified swagger.json file
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(swaggerData))
+	})
+
+	// Define your route handlers
 	mux.HandleFunc("/totalSubmissions", handleTotalSubmissions)
 	mux.HandleFunc("/eligibleNodesCount", handleEligibleNodesCount)
 	mux.HandleFunc("/batchCount", handleBatchCount)
@@ -853,6 +876,11 @@ func StartApiServer() {
 
 	mux.Handle("/swagger/", RequestMiddleware(swaggerHandler))
 
-	log.Println("Server is running on port 8080")
+	log.Println("Server is running on " + host)
 	log.Fatal(http.ListenAndServe(":8080", handler))
+}
+
+// Replace the placeholder {{API_HOST}} in the Swagger JSON with the actual host
+func replaceHost(swaggerData, host string) string {
+	return strings.ReplaceAll(swaggerData, "{{API_Host}}", host)
 }

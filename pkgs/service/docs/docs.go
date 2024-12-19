@@ -669,7 +669,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "devnet-sequencer-collector.aws2.powerloom.io",
+	Host:             "{{API_Host}}",
 	BasePath:         "/",
 	Schemes:          []string{"https"},
 	Title:            "My API Documentation",

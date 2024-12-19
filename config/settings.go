@@ -21,6 +21,7 @@ type Settings struct {
 	SlackReportingUrl           string
 	TxRelayerUrl                string
 	TxRelayerAuthWriteToken     string
+	APIHost                     string
 	DataMarketAddresses         []string
 	DataMarketContractAddresses []common.Address
 	BatchSize                   int
@@ -62,6 +63,7 @@ func LoadConfig() {
 		TxRelayerAuthWriteToken:     getEnv("TX_RELAYER_AUTH_WRITE_TOKEN", ""),
 		DataMarketAddresses:         dataMarketAddressesList,
 		PeriodicEligibleCountAlerts: periodicEligibleCountAlerts,
+		APIHost:                     getEnv("API_HOST", ""),
 	}
 
 	if config.AuthReadToken == "" {

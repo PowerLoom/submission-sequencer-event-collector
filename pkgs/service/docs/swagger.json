@@ -14,7 +14,7 @@
         },
         "version": "1.0"
     },
-    "host": "devnet-sequencer-collector.aws2.powerloom.io",
+    "host": "{{API_Host}}",
     "basePath": "/",
     "paths": {
         "/batchCount": {
