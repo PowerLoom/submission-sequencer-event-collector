@@ -41,6 +41,12 @@ type DayTransitionEpochInfo struct {
 	BufferEpoch  int64
 }
 
+type BatchDetails struct {
+	DataMarketAddress string
+	BatchCID          string
+	EpochID           *big.Int
+}
+
 // ProcessEvents processes logs for the given block and handles the EpochReleased event
 func ProcessEvents(block *types.Block) {
 	var logs []types.Log
@@ -132,6 +138,47 @@ func ProcessEvents(block *types.Block) {
 				}
 
 				log.Infof("✅ Successfully stored epoch marker details for epochID %s, data market %s in Redis", newEpochID.String(), dataMarketAddress)
+			}
+
+		case ContractABI.Events["SnapshotBatchSubmitted"].ID.Hex():
+			log.Debugf("SnapshotBatchSubmitted event detected in block %d", block.Number().Int64())
+
+			// Parse the `SnapshotBatchSubmitted` event from the log
+			releasedEvent, err := Instance.ParseSnapshotBatchSubmitted(vLog)
+			if err != nil {
+				errorMsg := fmt.Sprintf("Failed to parse SnapshotBatchSubmitted event for block %d: %s", block.Number().Int64(), err.Error())
+				clients.SendFailureNotification(pkgs.ProcessEvents, errorMsg, time.Now().String(), "High")
+				log.Error(errorMsg)
+				continue
+			}
+
+			// Check if the DataMarketAddress in the event matches any address in the DataMarketAddress array
+			if isValidDataMarketAddress(releasedEvent.DataMarketAddress.Hex()) {
+				// Extract the epoch ID and the data market address from the event
+				epochID := releasedEvent.EpochId
+				dataMarketAddress := releasedEvent.DataMarketAddress.Hex()
+
+				// Create an instance of batch details
+				batch := BatchDetails{
+					EpochID:           epochID,
+					DataMarketAddress: dataMarketAddress,
+					BatchCID:          releasedEvent.BatchCid,
+				}
+
+				// Serialize the struct to JSON
+				jsonData, err := json.Marshal(batch)
+				if err != nil {
+					log.Errorf("Serialization failed for batch details of epoch %s, data market %s: %v", epochID.String(), dataMarketAddress, err)
+					continue
+				}
+
+				// Push the serialized data to Redis
+				if err = redis.RedisClient.LPush(context.Background(), "attestorQueue", jsonData).Err(); err != nil {
+					log.Errorf("Error pushing batch details to Redis for epoch %s, data market %s: %v", epochID.String(), dataMarketAddress, err)
+					continue
+				}
+
+				log.Infof("✅ Batch details successfully pushed to Redis for epoch %s in data market %s", epochID.String(), dataMarketAddress)
 			}
 		}
 	}
