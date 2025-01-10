@@ -375,13 +375,6 @@ func triggerBatchPreparation(dataMarketAddress string, epochID *big.Int, startBl
 
 		log.Infof("✅ Batch %d successfully pushed to Redis and stored for epoch %s in data market %s", batchID.Int64(), epochID.String(), dataMarketAddress)
 	}
-
-	// Remove the epochID and its details from Redis after processing all batches
-	if err := redis.RemoveEpochFromRedis(context.Background(), dataMarketAddress, epochID.String()); err != nil {
-		log.Errorf("Error removing epoch %s from Redis for data market %s: %v", epochID.String(), dataMarketAddress, err)
-	}
-
-	log.Infof("🧹 Successfully removed epoch %s data from Redis for data market %s", epochID.String(), dataMarketAddress)
 }
 
 // Calculate and update total submission count for a data market address

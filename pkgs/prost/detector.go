@@ -59,6 +59,9 @@ func StartFetchingBlocks() {
 			// Process the events in the block
 			go ProcessEvents(block)
 
+			// Start periodic cleanup of stale epoch marker keys
+			go startPeriodicCleanupRoutine(context.Background(), block)
+
 			// Add block number and its hash to Redis
 			if err = redis.SetWithExpiration(context.Background(), redis.BlockHashByNumber(blockNum), block.Hash().Hex(), 30*time.Minute); err != nil {
 				log.Errorf("Failed to set block hash for block number %d in Redis: %s", blockNum, err)
