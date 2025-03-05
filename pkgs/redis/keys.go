@@ -109,3 +109,7 @@ func LastSnapshotSubmission(dataMarketAddress string, slotID uint64) string {
 func TotalNodesCountKey() string {
 	return pkgs.TotalNodesCount
 }
+
+func ActiveSnapshottersForEpoch(dataMarketAddress string, epochID uint64) string {
+	return fmt.Sprintf("%s.%s.%d", pkgs.ActiveSnapshottersForEpoch, strings.ToLower(dataMarketAddress), epochID)
+}

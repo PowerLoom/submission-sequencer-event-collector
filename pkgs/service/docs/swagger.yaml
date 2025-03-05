@@ -157,6 +157,13 @@ definitions:
           $ref: '#/definitions/service.SubmissionDetails'
         type: array
     type: object
+  service.InfoType-int64:
+    properties:
+      response:
+        type: integer
+      success:
+        type: boolean
+    type: object
   service.InfoType-service_BatchCount:
     properties:
       response:
@@ -235,6 +242,13 @@ definitions:
       slotID:
         type: integer
       snapshotCID:
+        type: string
+    type: object
+  service.Response-int64:
+    properties:
+      info:
+        $ref: '#/definitions/service.InfoType-int64'
+      requestID:
         type: string
     type: object
   service.Response-service_BatchCount:
@@ -348,6 +362,43 @@ info:
   title: Sequencer API Documentation
   version: "1.0"
 paths:
+  /activeNodesCountByEpoch:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves the count of active nodes that submitted snapshots for
+        a specific epoch in a given data market
+      parameters:
+      - description: Epoch data market request payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.EpochDataMarketRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.Response-int64'
+        "400":
+          description: 'Bad Request: Invalid input parameters (e.g., missing or invalid
+            epochID, or invalid data market address)'
+          schema:
+            type: string
+        "401":
+          description: 'Unauthorized: Incorrect token'
+          schema:
+            type: string
+        "500":
+          description: 'Internal Server Error: Failed to fetch epoch active nodes
+            count'
+          schema:
+            type: string
+      summary: Get active nodes count for an epoch
+      tags:
+      - Active Nodes
   /batchCount:
     post:
       consumes:

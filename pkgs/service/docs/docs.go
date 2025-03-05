@@ -20,6 +20,58 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/activeNodesCountByEpoch": {
+            "post": {
+                "description": "Retrieves the count of active nodes that submitted snapshots for a specific epoch in a given data market",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Active Nodes"
+                ],
+                "summary": "Get active nodes count for an epoch",
+                "parameters": [
+                    {
+                        "description": "Epoch data market request payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/service.EpochDataMarketRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/service.Response-int64"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request: Invalid input parameters (e.g., missing or invalid epochID, or invalid data market address)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized: Incorrect token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error: Failed to fetch epoch active nodes count",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/batchCount": {
             "post": {
                 "description": "Retrieves the total number of batches created within a specific epoch for a given data market address",
@@ -750,6 +802,17 @@ const docTemplate = `{
                 }
             }
         },
+        "service.InfoType-int64": {
+            "type": "object",
+            "properties": {
+                "response": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "service.InfoType-service_BatchCount": {
             "type": "object",
             "properties": {
@@ -871,6 +934,17 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "snapshotCID": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.Response-int64": {
+            "type": "object",
+            "properties": {
+                "info": {
+                    "$ref": "#/definitions/service.InfoType-int64"
+                },
+                "requestID": {
                     "type": "string"
                 }
             }

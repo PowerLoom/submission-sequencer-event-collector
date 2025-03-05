@@ -1277,6 +1277,75 @@ func handleLastSnapshotSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleActiveNodesCountByEpoch godoc
+// @Summary Get active nodes count for an epoch
+// @Description Retrieves the count of active nodes that submitted snapshots for a specific epoch in a given data market
+// @Tags Active Nodes
+// @Accept json
+// @Produce json
+// @Param request body EpochDataMarketRequest true "Epoch data market request payload"
+// @Success 200 {object} Response[int64]
+// @Failure 400 {string} string "Bad Request: Invalid input parameters (e.g., missing or invalid epochID, or invalid data market address)"
+// @Failure 401 {string} string "Unauthorized: Incorrect token"
+// @Failure 500 {string} string "Internal Server Error: Failed to fetch epoch active nodes count"
+// @Router /activeNodesCountByEpoch [post]
+func handleActiveNodesCountByEpoch(w http.ResponseWriter, r *http.Request) {
+	var request EpochDataMarketRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if request.Token != config.SettingsObj.AuthReadToken {
+		http.Error(w, "Incorrect Token!", http.StatusUnauthorized)
+		return
+	}
+
+	epochID := request.EpochID
+	if epochID <= 0 {
+		http.Error(w, "EpochID is missing or invalid", http.StatusBadRequest)
+		return
+	}
+
+	isValid := false
+	for _, dataMarketAddress := range config.SettingsObj.DataMarketAddresses {
+		if request.DataMarketAddress == dataMarketAddress {
+			isValid = true
+			break
+		}
+	}
+
+	if !isValid {
+		http.Error(w, "Invalid Data Market Address!", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch the active nodes count from Redis
+	activeNodesCountKey := redis.ActiveSnapshottersForEpoch(request.DataMarketAddress, uint64(request.EpochID))
+	activeNodesCountInt, err := redis.RedisClient.SCard(r.Context(), activeNodesCountKey).Result()
+	if err != nil {
+		http.Error(w, "Internal Server Error: Failed to fetch epoch active nodes count", http.StatusInternalServerError)
+		return
+	}
+
+	info := InfoType[int64]{
+		Success:  true,
+		Response: activeNodesCountInt,
+	}
+
+	response := Response[int64]{
+		Info:      info,
+		RequestID: r.Context().Value("request_id").(string),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+}
+
 func RequestMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := uuid.New().String()
@@ -1326,6 +1395,7 @@ func StartApiServer() {
 	mux.HandleFunc("/discardedSubmissionsByDay", handleDiscardedSubmissionsByDay)
 	mux.HandleFunc("/lastSimulatedSubmission", handleLastSimulatedSubmission)
 	mux.HandleFunc("/lastSnapshotSubmission", handleLastSnapshotSubmission)
+	mux.HandleFunc("/activeNodesCountByEpoch", handleActiveNodesCountByEpoch)
 
 	// Enable CORS with specific settings
 	corsHandler := handlers.CORS(
