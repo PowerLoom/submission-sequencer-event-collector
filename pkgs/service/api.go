@@ -127,8 +127,7 @@ type SubmissionDetails struct {
 }
 
 type EpochSubmissionSummary struct {
-	SubmissionCount int                 `json:"epochSubmissionCount"`
-	Submissions     []SubmissionDetails `json:"submissions"`
+	Submissions []SubmissionDetails `json:"submissions"`
 }
 
 type EligibleSubmissionCounts struct {
@@ -679,21 +678,6 @@ func handleEpochSubmissionDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch the epoch submission count from Redis
-	submissionCountKey := redis.EpochSubmissionsCount(request.DataMarketAddress, uint64(request.EpochID))
-	submissionCountStr, err := redis.Get(r.Context(), submissionCountKey)
-	if err != nil {
-		http.Error(w, "Internal Server Error: Failed to fetch epoch submission count", http.StatusInternalServerError)
-		return
-	}
-
-	// Convert submission count to integer
-	submissionCount, err := strconv.Atoi(submissionCountStr)
-	if err != nil {
-		http.Error(w, "Internal Server Error: Invalid epoch submission format", http.StatusInternalServerError)
-		return
-	}
-
 	// Fetch the epoch submission details from Redis
 	epochSubmissionsKey := redis.EpochSubmissionsKey(request.DataMarketAddress, uint64(request.EpochID))
 	epochSubmissionDetails, err := getEpochSubmissions(r.Context(), epochSubmissionsKey)
@@ -739,8 +723,7 @@ func handleEpochSubmissionDetails(w http.ResponseWriter, r *http.Request) {
 	info := InfoType[EpochSubmissionSummary]{
 		Success: true,
 		Response: EpochSubmissionSummary{
-			SubmissionCount: submissionCount,
-			Submissions:     submissionDetailsList,
+			Submissions: submissionDetailsList,
 		},
 	}
 

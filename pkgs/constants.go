@@ -34,7 +34,6 @@ const (
 	EligibleNodeByDayKey             = "EligibleNodeByDayKey"
 	LastKnownDayKey                  = "LastKnownDayKey"
 	DailySnapshotQuotaTableKey       = "DailySnapshotQuotaTableKey"
-	EpochSubmissionsCountKey         = "EpochSubmissionsCountKey"
 	EpochSubmissionsKey              = "EpochSubmissionsKey"
 	EligibleSlotSubmissionByEpochKey = "EligibleSlotSubmissionByEpochKey"
 	DiscardedSubmissionKey           = "DiscardedSubmissionKey"

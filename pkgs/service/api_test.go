@@ -458,9 +458,6 @@ func TestHandleEpochSubmissionDetails(t *testing.T) {
 	// Set the authentication read token
 	config.SettingsObj.AuthReadToken = "valid-token"
 
-	// Set the epoch submission count
-	redis.Set(context.Background(), redis.EpochSubmissionsCount("0x0C2E22fe7526fAeF28E7A58c84f8723dEFcE200c", 123), "10")
-
 	// Set the epoch submission details
 	epochSubmissionKey := redis.EpochSubmissionsKey("0x0C2E22fe7526fAeF28E7A58c84f8723dEFcE200c", 123)
 	epochSubmissionsMap := getEpochSubmissionDetails(10)
@@ -490,8 +487,7 @@ func TestHandleEpochSubmissionDetails(t *testing.T) {
 			body:       `{"epochID": 123, "token": "valid-token", "dataMarketAddress": "0x0C2E22fe7526fAeF28E7A58c84f8723dEFcE200c"}`,
 			statusCode: http.StatusOK,
 			response: EpochSubmissionSummary{
-				SubmissionCount: 10,
-				Submissions:     epochSubmissionsList,
+				Submissions: epochSubmissionsList,
 			},
 		},
 		{

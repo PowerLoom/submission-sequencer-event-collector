@@ -150,8 +150,6 @@ definitions:
     type: object
   service.EpochSubmissionSummary:
     properties:
-      epochSubmissionCount:
-        type: integer
       submissions:
         items:
           $ref: '#/definitions/service.SubmissionDetails'

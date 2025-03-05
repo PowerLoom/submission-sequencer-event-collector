@@ -739,9 +739,6 @@ const docTemplate = `{
         "service.EpochSubmissionSummary": {
             "type": "object",
             "properties": {
-                "epochSubmissionCount": {
-                    "type": "integer"
-                },
                 "submissions": {
                     "type": "array",
                     "items": {
